@@ -1,0 +1,24 @@
+@token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjM4MDI5MzRmZTBlZWM0NmE1ZWQwMDA2ZDE0YTFiYWIwMWUzNDUwODMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vZXhwZW5zZS10cmFja2VyLTQyOWI2IiwiYXVkIjoiZXhwZW5zZS10cmFja2VyLTQyOWI2IiwiYXV0aF90aW1lIjoxNzYyNjkwMDY0LCJ1c2VyX2lkIjoiWFlMS3JOVHE2blFiZVFzRFg4N2trZ0pLTExtMiIsInN1YiI6IlhZTEtyTlRxNm5RYmVRc0RYODdra2dKS0xMbTIiLCJpYXQiOjE3NjI2OTAwNjQsImV4cCI6MTc2MjY5MzY2NCwiZW1haWwiOiJhZ296aWV1YmVzaWVAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImFnb3ppZXViZXNpZUBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.BljCQkgMk1MiK-0sNxBI0QAeSDEP1xlvElW6o7bkcH_R5i9XYKTlCC_chy3UJZ-1utol0H2FgDW49A6gkwviC4xQ-fr2T-grnEpEsuElsVv8pgs2wGzbOSVknN8b4S4lTygiljyeZEED2iQDTTcCzSz3nHKVVVo2-I6OdcuV8d9bwkOICROkqmfJdTi-gja3r2FHjseDGxSQGVN1yoCHIaUarMgWyrEgKxRscqh0YJdfhUVt8ZfuSHnoNFEu6XjS5DB5Inemaa7r0Z9q0ogPf0E6rd-eilvTcNSBVlpTak9pk9u40oCeLCYkTPkj8bHGyCJOFwA1JuMUQvD5aUWf-Q
+GET http://localhost:5000/api/users
+Content-Type: application/json
+
+### Create User
+POST http://localhost:5000/api/users
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "agozieubesie@gmail.com",
+  "name": "John Doe"
+}
+
+
+### login user
+POST http://localhost:5000/api/users/login
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "agozieubesie@gmail.com",
+  "name": "zion ubesie"
+}

@@ -1,0 +1,109 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL") 
+}
+
+
+// USERS
+model User {
+  id         Int           @id @default(autoincrement())
+  fullName   String
+  email      String        @unique
+  user_uid   String        @unique
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  accounts   Account[]
+  transactions Transaction[]
+  budgets     Budget[]
+  userCategory UserCategory[]
+}
+
+// ACCOUNTS / WALLETS
+model Account {
+  id         Int           @id @default(autoincrement())
+  name       String        // e.g., "Bank", "Cash", "Card"
+  type       AccountType
+  balance    Float         @default(0)
+  user       User          @relation(fields: [userId], references: [id])
+  userId     Int
+  transactions Transaction[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+enum AccountType {
+  BANK
+  CASH
+  CARD
+  OTHER
+}
+
+// CATEGORIES
+model Category {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  type        TransactionType
+  transactions Transaction[]
+  category     UserCategory[]
+}
+
+// TRANSACTIONS
+model Transaction {
+  id          Int           @id @default(autoincrement())
+  type        TransactionType
+  amount      Float
+  description String?
+  date        DateTime
+  account     Account       @relation(fields: [accountId], references: [id])
+  accountId   Int
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  categoryId  Int?
+  user        User          @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+// BUDGETS
+model Budget {
+  id          Int           @id @default(autoincrement())
+  name        String
+  limit       Float
+  startDate   DateTime
+  endDate     DateTime
+  user        User          @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model UserCategory {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  categoryId Int
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [user_uid])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([userId, categoryId]) // ensures no duplicate mapping
+}
