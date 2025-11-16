@@ -8,11 +8,21 @@ class TransactionsController {
     getAllTransactions = async (req, res) => {
         try {
             const { type, startDate, endDate } = req.query;
-            const userId = req.user.uid; // from Firebase auth middleware
+            const user_uid = req.user.uid;
 
-            const filters = { userId };
+            // Find SQL user
+            const user = await prisma.user.findUnique({
+                where: { user_uid }
+            });
+
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const filters = { userId: user.id };
 
             if (type) filters.type = type;
+
             if (startDate && endDate) {
                 filters.date = {
                     gte: new Date(startDate),
@@ -22,6 +32,10 @@ class TransactionsController {
 
             const transactions = await prisma.transaction.findMany({
                 where: filters,
+                include: {
+                    category: true,
+                    account: true,
+                },
                 orderBy: { date: "desc" },
             });
 
@@ -122,7 +136,7 @@ class TransactionsController {
                 where: { id: Number(id) },
             });
 
-            if (!transaction || transaction.userId !== userId) {
+            if (!transaction) {
                 return res.status(404).json({ error: "Transaction not found" });
             }
 
@@ -139,16 +153,26 @@ class TransactionsController {
 
     getSummary = async (req, res) => {
         try {
-            const userId = req.user.uid;
+            const user_uid = req.user.uid;
+
+            // Find SQL user
+            const user = await prisma.user.findUnique({
+                where: { user_uid }
+            });
+
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
+            }
+            const userId = user.id
 
             const income = await prisma.transaction.aggregate({
                 _sum: { amount: true },
-                where: { userId, type: "income" },
+                where: { userId, type: "INCOME" },
             });
 
             const expense = await prisma.transaction.aggregate({
                 _sum: { amount: true },
-                where: { userId, type: "expense" },
+                where: { userId, type: "EXPENSE" },
             });
 
             const totalIncome = income._sum.amount || 0;
@@ -161,6 +185,70 @@ class TransactionsController {
             res.status(500).json({ error: "Failed to fetch summary" });
         }
     };
+    getMonthlySummary = async (req, res) => {
+        try {
+
+            const user_uid = req.user.uid;
+
+            // Find SQL user
+            const user = await prisma.user.findUnique({
+                where: { user_uid }
+            });
+
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
+            }
+            const userId = user.id; // Your Prisma User ID
+
+            // Fetch all user's transactions
+            const transactions = await prisma.transaction.findMany({
+                where: { userId },
+                select: {
+                    amount: true,
+                    type: true, // INCOME or EXPENSE
+                    date: true,
+                },
+            });
+
+            // Prepare monthly map
+            const summaryMap = {};
+
+            transactions.forEach((tx) => {
+                const month = tx.date.toLocaleString("en-US", { month: "short" }); // Jan, Feb...
+
+                if (!summaryMap[month]) {
+                    summaryMap[month] = { income: 0, expense: 0 };
+                }
+
+                if (tx.type === "INCOME") {
+                    summaryMap[month].income += tx.amount;
+                } else if (tx.type === "EXPENSE") {
+                    summaryMap[month].expense += tx.amount;
+                }
+            });
+
+            // Convert map to array sorted by month order
+            const orderedMonths = [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            ];
+
+            const result = orderedMonths
+                .filter((m) => summaryMap[m]) // only months with data
+                .map((m) => ({
+                    name: m,
+                    Income: summaryMap[m].income,
+                    Expense: summaryMap[m].expense,
+                }));
+
+            return res.json(result);
+
+        } catch (error) {
+            console.error("Monthly Summary Error:", error);
+            return res.status(500).json({ error: "Failed to fetch monthly summary" });
+        }
+    };
+
 }
 export default TransactionsController
 

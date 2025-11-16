@@ -7,6 +7,7 @@ const router = express.Router()
 
 
 router.get("/", transactionsController.getAllTransactions);
+router.get("/monthly-summary",  transactionsController.getMonthlySummary);
 router.post("/", transactionsController.addTransaction);
 router.put("/:id", transactionsController.updateTransaction);
 router.delete("/:id", transactionsController.deleteTransaction);

@@ -12,7 +12,18 @@ class BudgetController {
   // GET /api/budgets
   async getAllBudgets(req, res) {
     try {
-      const userId = req.user.uid;
+      const user_uid = req.user.uid;
+
+      // 2️⃣ Lookup the SQL user
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
 
       const budgets = await prisma.budget.findMany({
         where: { userId },
@@ -30,19 +41,32 @@ class BudgetController {
   // POST /api/budgets
   async createBudget(req, res) {
     try {
-      const userId = req.user.uid;
-      const { categoryId, amount, period } = req.body;
+      const user_uid = req.user.uid;
 
-      if (!categoryId || !amount || !period) {
+      // 2️⃣ Lookup the SQL user
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
+      const { categoryId, amount, startDate, endDate, categoryName } = req.body;
+
+      if (!categoryId || !amount || !startDate || !endDate) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
       const budget = await prisma.budget.create({
         data: {
           categoryId: Number(categoryId),
-          amount,
-          period,        // "MONTHLY" | "WEEKLY"
+          limit: amount,
+          startDate,
+          endDate,        // "MONTHLY" | "WEEKLY"
           userId,
+          name: categoryName
         },
       });
 
@@ -61,7 +85,7 @@ class BudgetController {
     try {
       const userId = req.user.uid;
       const { id } = req.params;
-      const { amount, period } = req.body;
+      const { amount, startDate } = req.body;
 
       const old = await prisma.budget.findUnique({
         where: { id: Number(id) }
@@ -73,7 +97,7 @@ class BudgetController {
 
       const updated = await prisma.budget.update({
         where: { id: Number(id) },
-        data: { amount, period },
+        data: { amount, startDate },
       });
 
       return res.json({
@@ -85,6 +109,49 @@ class BudgetController {
       return res.status(500).json({ error: "Failed to update budget" });
     }
   }
+
+  // GET /budgets/:id/spent
+  getBudgetSpent = async (req, res) => {
+    const user_uid = req.user.uid;
+
+    // 2️⃣ Lookup the SQL user
+    const user = await prisma.user.findUnique({
+      where: { user_uid } // assuming you store Firebase UID in your User table
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    const userId = user.id;
+    const budgetId = Number(req.params.id);
+
+    const budget = await prisma.budget.findUnique({
+      where: { id: budgetId },
+    });
+
+    if (!budget) return res.status(404).json({ message: "Budget not found" });
+
+    const spent = await prisma.transaction.aggregate({
+      _sum: {
+        amount: true
+      },
+      where: {
+        userId,
+        categoryId: budget.categoryId,
+        type: "EXPENSE",         // 🔥 Only expense transactions
+        date: {
+          gte: budget.startDate,
+          lte: budget.endDate
+        }
+      }
+    });
+
+    res.json({
+      spent: spent._sum.amount || 0
+    });
+  };
+
 
   // DELETE /api/budgets/:id
   async deleteBudget(req, res) {

@@ -12,7 +12,18 @@ class AccountController {
   // GET /api/accounts
   async getAllAccounts(req, res) {
     try {
-      const userId = req.user.uid;
+      const user_uid = req.user.uid;
+
+      // 2️⃣ Lookup the SQL user
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
 
       const accounts = await prisma.account.findMany({
         where: { userId },
@@ -29,12 +40,19 @@ class AccountController {
   // POST /api/accounts
   async createAccount(req, res) {
     try {
-      const userId = req.user.uid;
+      const user_uid = req.user.uid;
       const { name, type, balance } = req.body;
-
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
       if (!name || !type) {
         return res.status(400).json({ error: "Name and type are required" });
       }
+      if (!user) {
+        return res.status(400).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
 
       const newAccount = await prisma.account.create({
         data: {

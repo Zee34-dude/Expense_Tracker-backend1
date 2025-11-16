@@ -59,6 +59,7 @@ model Category {
   type        TransactionType
   transactions Transaction[]
   category     UserCategory[]
+  budget        Budget[]
 }
 
 // TRANSACTIONS
@@ -87,6 +88,8 @@ enum TransactionType {
 model Budget {
   id          Int           @id @default(autoincrement())
   name        String
+  category    Category   @relation(fields: [categoryId], references: [id])
+  categoryId  Int
   limit       Float
   startDate   DateTime
   endDate     DateTime
