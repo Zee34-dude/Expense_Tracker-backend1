@@ -83,7 +83,18 @@ class BudgetController {
   // PUT /api/budgets/:id
   async updateBudget(req, res) {
     try {
-      const userId = req.user.uid;
+      const user_uid = req.user.uid;
+
+      // 2️⃣ Lookup the SQL user
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
       const { id } = req.params;
       const { amount, startDate } = req.body;
 
@@ -97,7 +108,7 @@ class BudgetController {
 
       const updated = await prisma.budget.update({
         where: { id: Number(id) },
-        data: { amount, startDate },
+        data: { limit: amount, startDate },
       });
 
       return res.json({
@@ -156,7 +167,19 @@ class BudgetController {
   // DELETE /api/budgets/:id
   async deleteBudget(req, res) {
     try {
-      const userId = req.user.uid;
+      const user_uid = req.user.uid;
+
+      // 2️⃣ Lookup the SQL user
+      const user = await prisma.user.findUnique({
+        where: { user_uid } // assuming you store Firebase UID in your User table
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found in database" });
+      }
+
+      const userId = user.id;
+
       const { id } = req.params;
 
       const old = await prisma.budget.findUnique({
