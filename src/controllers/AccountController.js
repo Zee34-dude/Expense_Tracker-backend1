@@ -12,21 +12,8 @@ class AccountController {
   // GET /api/accounts
   async getAllAccounts(req, res) {
     try {
-      const user_uid = req.user.uid;
-
-      // 2️⃣ Lookup the SQL user
-      const user = await prisma.user.findUnique({
-        where: { user_uid } // assuming you store Firebase UID in your User table
-      });
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found in database" });
-      }
-
-      const userId = user.id;
 
       const accounts = await prisma.account.findMany({
-        where: { userId },
         orderBy: { createdAt: "desc" }
       });
 
